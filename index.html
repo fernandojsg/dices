@@ -11,14 +11,14 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0f0f1a;
       color: #e0e0e0;
-      display: flex;
       height: 100vh;
       overflow: hidden;
     }
 
+    /* Viewport fills entire page */
     #viewport {
-      flex: 1;
-      position: relative;
+      position: absolute;
+      inset: 0;
     }
 
     #viewport canvas {
@@ -27,22 +27,78 @@
       height: 100%;
     }
 
-    #sidebar {
+    /* Hamburger button */
+    #menu-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 200;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(26, 26, 46, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #e0e0e0;
+      font-size: 1.4rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    #menu-btn:hover { background: rgba(37, 37, 71, 0.9); }
+
+    /* Overlay backdrop */
+    #menu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 140;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    body.menu-open #menu-overlay {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Slide-out menu */
+    #menu {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
       width: 320px;
+      z-index: 150;
       background: #1a1a2e;
-      border-left: 1px solid #2a2a4a;
+      border-right: 1px solid #2a2a4a;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
     }
 
-    #sidebar h2 {
+    body.menu-open #menu {
+      transform: translateX(0);
+    }
+
+    #menu h2 {
       font-size: 1.1rem;
       padding: 14px 16px 8px;
       color: #8888cc;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       font-weight: 600;
+    }
+
+    #menu h2:first-child {
+      padding-top: 20px;
     }
 
     .panel {
@@ -127,28 +183,30 @@
       background: rgba(231, 76, 60, 0.1);
     }
 
-    #roll-btn {
-      width: calc(100% - 20px);
-      margin: 8px 10px;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #6c5ce7, #a855f7);
-      color: #fff;
-      font-size: 1.15rem;
-      font-weight: 700;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      transition: filter 0.15s, transform 0.1s;
+    /* Bottom bar */
+    #bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(26, 26, 46, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-top: 1px solid #2a2a4a;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    #roll-btn:hover { filter: brightness(1.15); }
-    #roll-btn:active { transform: scale(0.97); }
-    #roll-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
-
     #results {
-      min-height: 60px;
+      flex: 1;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 2px;
     }
 
     .result-value {
@@ -160,17 +218,36 @@
       border-radius: 6px;
       font-weight: 700;
       font-size: 1rem;
-      margin: 3px;
+      margin: 2px;
     }
 
     #result-total {
-      padding: 8px 12px;
-      margin-top: 8px;
       font-size: 1.1rem;
       font-weight: 700;
       color: #a855f7;
-      text-align: right;
+      margin-left: 8px;
+      white-space: nowrap;
     }
+
+    #roll-btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6c5ce7, #a855f7);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: filter 0.15s, transform 0.1s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #roll-btn:hover { filter: brightness(1.15); }
+    #roll-btn:active { transform: scale(0.97); }
+    #roll-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
 
     .preset-list {
       display: flex;
@@ -256,23 +333,61 @@
       padding: 12px;
     }
 
-    #sidebar::-webkit-scrollbar,
+    /* Scrollbars */
+    #menu::-webkit-scrollbar,
     #dice-list::-webkit-scrollbar,
     .preset-list::-webkit-scrollbar {
       width: 6px;
     }
 
-    #sidebar::-webkit-scrollbar-track,
+    #menu::-webkit-scrollbar-track,
     #dice-list::-webkit-scrollbar-track,
     .preset-list::-webkit-scrollbar-track {
       background: transparent;
     }
 
-    #sidebar::-webkit-scrollbar-thumb,
+    #menu::-webkit-scrollbar-thumb,
     #dice-list::-webkit-scrollbar-thumb,
     .preset-list::-webkit-scrollbar-thumb {
       background: #333;
       border-radius: 3px;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      #menu {
+        width: 280px;
+      }
+
+      #roll-btn {
+        padding: 16px 24px;
+        font-size: 1.25rem;
+      }
+
+      .result-value {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+      }
+
+      #result-total {
+        font-size: 1.2rem;
+      }
+
+      #bottom-bar {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+      }
+
+      #results {
+        min-width: 100%;
+        order: 2;
+      }
+
+      #roll-btn {
+        width: 100%;
+        order: 1;
+      }
     }
   </style>
 
@@ -287,7 +402,11 @@
 </head>
 <body>
   <div id="viewport"></div>
-  <div id="sidebar">
+
+  <button id="menu-btn">&#9776;</button>
+  <div id="menu-overlay"></div>
+
+  <div id="menu">
     <h2>Presets</h2>
     <div class="panel" id="presets-panel"></div>
 
@@ -307,13 +426,13 @@
     <div class="panel" id="dice-list-panel">
       <div id="dice-list"></div>
     </div>
+  </div>
 
-    <button id="roll-btn" disabled>Roll Dice</button>
-
-    <h2>Results</h2>
-    <div class="panel" id="results">
+  <div id="bottom-bar">
+    <div id="results">
       <div class="empty-state">Add dice and roll!</div>
     </div>
+    <button id="roll-btn" disabled>Roll Dice</button>
   </div>
 
   <script type="module" src="js/main.js"></script>

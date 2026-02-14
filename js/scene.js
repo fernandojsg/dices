@@ -1,17 +1,16 @@
 import * as THREE from 'three';
 
 const GROUND_SIZE = 20;
-const WALL_HEIGHT = 5;
 
 export function createScene(container) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0f0f1a);
   scene.fog = new THREE.Fog(0x0f0f1a, 30, 50);
 
-  // Camera
+  // Camera — fairly top-down for better die readability
   const aspect = container.clientWidth / container.clientHeight;
   const camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-  camera.position.set(0, 18, 14);
+  camera.position.set(0, 22, 10);
   camera.lookAt(0, 0, 0);
 
   // Renderer
@@ -59,17 +58,49 @@ export function createScene(container) {
   grid.position.y = 0.01;
   scene.add(grid);
 
-  // Handle resize
-  function onResize() {
+  // Resize handler — returned for main.js to call (not auto-bound)
+  function resize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
   }
-  window.addEventListener('resize', onResize);
 
-  return { scene, camera, renderer, onResize };
+  return { scene, camera, renderer, resize };
 }
 
-export { GROUND_SIZE, WALL_HEIGHT };
+/**
+ * Compute the visible play area on the ground plane (y=0) from the camera
+ * frustum. Returns the largest axis-aligned rectangle centered on origin
+ * that fits inside the frustum, inset by `margin`.
+ */
+export function computePlayBounds(camera, margin = 1.5) {
+  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const raycaster = new THREE.Raycaster();
+  const target = new THREE.Vector3();
+
+  let minX = Infinity, maxX = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+
+  // Cast rays through the four screen corners
+  for (const nx of [-1, 1]) {
+    for (const ny of [-1, 1]) {
+      raycaster.setFromCamera(new THREE.Vector2(nx, ny), camera);
+      if (raycaster.ray.intersectPlane(groundPlane, target)) {
+        minX = Math.min(minX, target.x);
+        maxX = Math.max(maxX, target.x);
+        minZ = Math.min(minZ, target.z);
+        maxZ = Math.max(maxZ, target.z);
+      }
+    }
+  }
+
+  // Use the inscribed rectangle (min of absolute extents on each side)
+  return {
+    halfX: Math.max(Math.min(Math.abs(minX), Math.abs(maxX)) - margin, 2),
+    halfZ: Math.max(Math.min(Math.abs(minZ), Math.abs(maxZ)) - margin, 2),
+  };
+}
+
+export { GROUND_SIZE };

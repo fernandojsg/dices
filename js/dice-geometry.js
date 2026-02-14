@@ -424,50 +424,55 @@ function assignFaceGroups(geometry, faceCount) {
     faceGroups.push(group);
   }
 
-  // We might have more groups than faceCount for some shapes.
   // Sort by first triangle index to maintain consistent ordering.
   faceGroups.sort((a, b) => a[0] - b[0]);
 
-  // Rebuild geometry as non-indexed with groups
-  if (idx) {
-    const newPositions = [];
-    const newUvs = [];
-    const groupDefs = [];
+  // Rebuild geometry as non-indexed with contiguous face groups + per-face UVs.
+  // Handles both indexed and non-indexed input (PolyhedronGeometry is non-indexed).
+  const newPositions = [];
+  const newUvs = [];
+  const groupDefs = [];
 
-    for (let fi = 0; fi < faceGroups.length; fi++) {
-      const matIndex = fi % faceCount;
-      const startVert = newPositions.length / 3;
+  for (let fi = 0; fi < faceGroups.length; fi++) {
+    const matIndex = fi % faceCount;
+    const startVert = newPositions.length / 3;
 
-      for (const triIdx of faceGroups[fi]) {
-        const i0 = idx.getX(triIdx * 3);
-        const i1 = idx.getX(triIdx * 3 + 1);
-        const i2 = idx.getX(triIdx * 3 + 2);
-
-        newPositions.push(
-          pos.getX(i0), pos.getY(i0), pos.getZ(i0),
-          pos.getX(i1), pos.getY(i1), pos.getZ(i1),
-          pos.getX(i2), pos.getY(i2), pos.getZ(i2)
-        );
-        newUvs.push(0.5, 1, 0, 0, 1, 0);
+    for (const triIdx of faceGroups[fi]) {
+      let i0, i1, i2;
+      if (idx) {
+        i0 = idx.getX(triIdx * 3);
+        i1 = idx.getX(triIdx * 3 + 1);
+        i2 = idx.getX(triIdx * 3 + 2);
+      } else {
+        i0 = triIdx * 3;
+        i1 = triIdx * 3 + 1;
+        i2 = triIdx * 3 + 2;
       }
 
-      const count = (newPositions.length / 3) - startVert;
-      groupDefs.push({ start: startVert, count, materialIndex: matIndex });
+      newPositions.push(
+        pos.getX(i0), pos.getY(i0), pos.getZ(i0),
+        pos.getX(i1), pos.getY(i1), pos.getZ(i1),
+        pos.getX(i2), pos.getY(i2), pos.getZ(i2)
+      );
+      newUvs.push(0.5, 1, 0, 0, 1, 0);
     }
 
-    geometry.deleteAttribute('position');
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
-    geometry.deleteAttribute('uv');
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(newUvs, 2));
-    geometry.setIndex(null);
-    geometry.clearGroups();
-
-    for (const g of groupDefs) {
-      geometry.addGroup(g.start, g.count, g.materialIndex);
-    }
-
-    geometry.computeVertexNormals();
+    const count = (newPositions.length / 3) - startVert;
+    groupDefs.push({ start: startVert, count, materialIndex: matIndex });
   }
+
+  geometry.deleteAttribute('position');
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
+  geometry.deleteAttribute('uv');
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(newUvs, 2));
+  geometry.setIndex(null);
+  geometry.clearGroups();
+
+  for (const g of groupDefs) {
+    geometry.addGroup(g.start, g.count, g.materialIndex);
+  }
+
+  geometry.computeVertexNormals();
 }
 
 // --- Public API ---
@@ -489,7 +494,12 @@ export function getDieData(type) {
     if (!builder) throw new Error(`Unknown die type: ${type}`);
     cache[type] = builder();
   }
-  return cache[type];
+  // Return a fresh geometry clone so each mesh has its own buffer data
+  const data = cache[type];
+  return {
+    ...data,
+    geometry: data.geometry.clone(),
+  };
 }
 
 export function readFaceValue(type, quaternion) {

@@ -6,14 +6,31 @@ export class UI {
     this.state = state;
     this.diceManager = diceManager;
 
+    this.menuBtn = document.getElementById('menu-btn');
+    this.menuOverlay = document.getElementById('menu-overlay');
     this.presetsPanel = document.getElementById('presets-panel');
     this.diceList = document.getElementById('dice-list');
     this.rollBtn = document.getElementById('roll-btn');
     this.resultsPanel = document.getElementById('results');
 
+    this._bindMenuToggle();
     this._bindAddButtons();
     this._bindRollButton();
     this.render();
+  }
+
+  _bindMenuToggle() {
+    this.menuBtn.addEventListener('click', () => {
+      document.body.classList.toggle('menu-open');
+    });
+
+    this.menuOverlay.addEventListener('click', () => {
+      document.body.classList.remove('menu-open');
+    });
+  }
+
+  _closeMenu() {
+    document.body.classList.remove('menu-open');
   }
 
   _bindAddButtons() {
@@ -148,6 +165,9 @@ export class UI {
 
     this.resultsPanel.innerHTML = '<div class="empty-state">Add dice and roll!</div>';
     this.render();
+
+    // Close menu after loading a preset
+    this._closeMenu();
   }
 
   renderDiceList() {
@@ -216,7 +236,7 @@ export class UI {
     }
 
     html += '</div>';
-    html += `<div id="result-total">Total: ${total}</div>`;
+    html += `<span id="result-total">Total: ${total}</span>`;
 
     this.resultsPanel.innerHTML = html;
   }

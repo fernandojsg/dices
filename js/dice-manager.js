@@ -29,6 +29,8 @@ export class DiceManager {
       material: this.diceMaterial,
       sleepTimeLimit: 0.5,
       sleepSpeedLimit: 0.1,
+      linearDamping: 0.3,
+      angularDamping: 0.3,
     });
     body.position.set(0, -10, 0);
     body.allowSleep = true;
@@ -76,29 +78,29 @@ export class DiceManager {
 
     // Arrange dice in starting positions
     const count = toThrow.length;
-    const spread = Math.min(count * 1.2, 8);
+    const spread = Math.min(count * 0.8, 3);
 
     for (let i = 0; i < count; i++) {
       const die = toThrow[i];
       const body = die.body;
 
-      // Starting position: elevated, spread along X
-      const x = (i - (count - 1) / 2) * (spread / count);
-      const y = 8 + Math.random() * 3;
-      const z = -3 + Math.random() * 2;
+      // Starting position: elevated, centered, spread along X
+      const x = (i - (count - 1) / 2) * (spread / Math.max(count, 1));
+      const y = 5 + Math.random() * 2;
+      const z = -1 + Math.random() * 2;
 
       body.position.set(x, y, z);
       body.velocity.set(
-        (Math.random() - 0.5) * 8,
-        -5 + Math.random() * 3,
-        (Math.random() - 0.5) * 6
+        (Math.random() - 0.5) * 4,
+        -3 + Math.random() * 2,
+        (Math.random() - 0.5) * 3
       );
 
       // Random spin
       body.angularVelocity.set(
-        (Math.random() - 0.5) * 20,
-        (Math.random() - 0.5) * 20,
-        (Math.random() - 0.5) * 20
+        (Math.random() - 0.5) * 15,
+        (Math.random() - 0.5) * 15,
+        (Math.random() - 0.5) * 15
       );
 
       // Random initial orientation
