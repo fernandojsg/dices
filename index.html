@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dice Roller</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #viewport {
+      flex: 1;
+      position: relative;
+    }
+
+    #viewport canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #sidebar {
+      width: 320px;
+      background: #1a1a2e;
+      border-left: 1px solid #2a2a4a;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    #sidebar h2 {
+      font-size: 1.1rem;
+      padding: 14px 16px 8px;
+      color: #8888cc;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .panel {
+      background: #16213e;
+      margin: 4px 10px;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .dice-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .dice-buttons button {
+      flex: 1 1 calc(33% - 6px);
+      min-width: 80px;
+      padding: 10px 6px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    .dice-buttons button:hover { filter: brightness(1.2); }
+    .dice-buttons button:active { transform: scale(0.95); }
+
+    .btn-d4  { background: #c0392b; color: #fff; }
+    .btn-d6  { background: #2980b9; color: #fff; }
+    .btn-d8  { background: #27ae60; color: #fff; }
+    .btn-d10 { background: #8e44ad; color: #fff; }
+    .btn-d12 { background: #d35400; color: #fff; }
+    .btn-d20 { background: #c49b1a; color: #fff; }
+
+    #dice-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .dice-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      background: #1a1a2e;
+    }
+
+    .dice-item label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .dice-item .die-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .dice-item button {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .dice-item button:hover {
+      color: #e74c3c;
+      background: rgba(231, 76, 60, 0.1);
+    }
+
+    #roll-btn {
+      width: calc(100% - 20px);
+      margin: 8px 10px;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6c5ce7, #a855f7);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    #roll-btn:hover { filter: brightness(1.15); }
+    #roll-btn:active { transform: scale(0.97); }
+    #roll-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
+
+    #results {
+      min-height: 60px;
+    }
+
+    .result-value {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 1rem;
+      margin: 3px;
+    }
+
+    #result-total {
+      padding: 8px 12px;
+      margin-top: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #a855f7;
+      text-align: right;
+    }
+
+    .preset-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .preset-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #1a1a2e;
+      transition: background 0.1s;
+    }
+
+    .preset-item:hover { background: #252547; }
+
+    .preset-item .preset-name {
+      flex: 1;
+      font-size: 0.9rem;
+    }
+
+    .preset-item .preset-desc {
+      font-size: 0.75rem;
+      color: #888;
+      margin-left: 8px;
+    }
+
+    .preset-item .delete-preset {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
+    .preset-item .delete-preset:hover {
+      color: #e74c3c;
+      background: rgba(231, 76, 60, 0.1);
+    }
+
+    .save-preset-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .save-preset-row input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #2a2a4a;
+      border-radius: 4px;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      font-size: 0.85rem;
+    }
+
+    .save-preset-row button {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 4px;
+      background: #6c5ce7;
+      color: #fff;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .save-preset-row button:hover { filter: brightness(1.15); }
+
+    .empty-state {
+      color: #555;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 12px;
+    }
+
+    #sidebar::-webkit-scrollbar,
+    #dice-list::-webkit-scrollbar,
+    .preset-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #sidebar::-webkit-scrollbar-track,
+    #dice-list::-webkit-scrollbar-track,
+    .preset-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb,
+    #dice-list::-webkit-scrollbar-thumb,
+    .preset-list::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 3px;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="viewport"></div>
+  <div id="sidebar">
+    <h2>Presets</h2>
+    <div class="panel" id="presets-panel"></div>
+
+    <h2>Add Dice</h2>
+    <div class="panel">
+      <div class="dice-buttons">
+        <button class="btn-d4" data-die="d4">d4</button>
+        <button class="btn-d6" data-die="d6">d6</button>
+        <button class="btn-d8" data-die="d8">d8</button>
+        <button class="btn-d10" data-die="d10">d10</button>
+        <button class="btn-d12" data-die="d12">d12</button>
+        <button class="btn-d20" data-die="d20">d20</button>
+      </div>
+    </div>
+
+    <h2>Dice Pool</h2>
+    <div class="panel" id="dice-list-panel">
+      <div id="dice-list"></div>
+    </div>
+
+    <button id="roll-btn" disabled>Roll Dice</button>
+
+    <h2>Results</h2>
+    <div class="panel" id="results">
+      <div class="empty-state">Add dice and roll!</div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
