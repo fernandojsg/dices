@@ -207,71 +207,6 @@ function buildD8() {
 
 function buildD10() {
   const radius = 0.9 * DIE_SCALE.d10;
-
-  // Pentagonal trapezohedron: 10 kite-shaped faces
-  // Construct from two pentagons rotated 36° relative to each other
-  const vertices = [];
-  const top = radius * 0.9;
-  const mid = radius * 0.2;
-  const bottom = -radius * 0.9;
-
-  // Top vertex
-  vertices.push(new THREE.Vector3(0, top, 0));
-  // Bottom vertex
-  vertices.push(new THREE.Vector3(0, bottom, 0));
-
-  // Upper ring (5 vertices)
-  for (let i = 0; i < 5; i++) {
-    const angle = (i * 2 * Math.PI) / 5;
-    vertices.push(new THREE.Vector3(
-      Math.cos(angle) * radius,
-      mid,
-      Math.sin(angle) * radius
-    ));
-  }
-
-  // Lower ring (5 vertices, offset by 36°)
-  for (let i = 0; i < 5; i++) {
-    const angle = (i * 2 * Math.PI) / 5 + Math.PI / 5;
-    vertices.push(new THREE.Vector3(
-      Math.cos(angle) * radius,
-      -mid,
-      Math.sin(angle) * radius
-    ));
-  }
-
-  // Build faces as triangles
-  // Each kite face = 2 triangles
-  const indices = [];
-  const faceGroupIndices = []; // which face group each triangle belongs to
-
-  for (let i = 0; i < 5; i++) {
-    const u0 = 2 + i;
-    const u1 = 2 + ((i + 1) % 5);
-    const l0 = 7 + i;
-    const l1 = 7 + ((i + 1) % 5);
-
-    // Upper face (kite): top, u0, l0, u1 (but as 2 triangles)
-    // Actually: top-u0-l0 and top-l0-u1... no.
-    // Kite face connecting top vertex to upper ring and lower ring:
-    // Face A: top, upperRing[i], lowerRing[i]
-    // Face B: top, lowerRing[i], upperRing[i+1]
-    // But this creates 10 triangles for 10 faces which isn't right for kites.
-
-    // Simpler approach: each face is a kite (quad) = 2 triangles
-    // Upper kite faces (connecting top to rings)
-    indices.push(0, u0, l0);  // upper-left triangle of kite
-    indices.push(0, l0, u1);  // upper-right triangle of kite
-    faceGroupIndices.push(i * 2, i * 2);
-
-    // Lower kite faces (connecting bottom to rings)
-    indices.push(1, l0, u0);  // lower-left triangle of kite
-    indices.push(1, u1, l0);  // lower-right triangle of kite... hmm
-
-    // Actually let me use a cleaner approach
-  }
-
-  // Restart: use a proper d10 construction
   const d10Geometry = createD10Geometry(radius);
   d10Geometry.computeVertexNormals();
 
@@ -288,8 +223,6 @@ function buildD10() {
       metalness: 0.1,
     }));
   }
-  assignFaceGroups(d10Geometry, 10);
-
   return {
     geometry: d10Geometry,
     materials: d10Materials,
@@ -304,7 +237,6 @@ function buildD10() {
 function createD10Geometry(radius) {
   // Pentagonal trapezohedron
   const t = (Math.PI * 2) / 5;
-  const alpha = Math.atan(0.5); // angle for the kite shape
 
   const topApex = new THREE.Vector3(0, radius, 0);
   const bottomApex = new THREE.Vector3(0, -radius, 0);
@@ -606,16 +538,25 @@ function getGroupNormals(data) {
   const { geometry, faceNormals } = data;
 
   if (geometry.groups.length > 0) {
-    // Compute one normal per material group
     const normals = [];
     const pos = geometry.getAttribute('position');
+    const idx = geometry.getIndex();
 
     for (const group of geometry.groups) {
-      // Take the first triangle of the group
-      const i = group.start;
-      const a = new THREE.Vector3().fromBufferAttribute(pos, i);
-      const b = new THREE.Vector3().fromBufferAttribute(pos, i + 1);
-      const c = new THREE.Vector3().fromBufferAttribute(pos, i + 2);
+      let i0, i1, i2;
+      if (idx) {
+        i0 = idx.getX(group.start);
+        i1 = idx.getX(group.start + 1);
+        i2 = idx.getX(group.start + 2);
+      } else {
+        i0 = group.start;
+        i1 = group.start + 1;
+        i2 = group.start + 2;
+      }
+
+      const a = new THREE.Vector3().fromBufferAttribute(pos, i0);
+      const b = new THREE.Vector3().fromBufferAttribute(pos, i1);
+      const c = new THREE.Vector3().fromBufferAttribute(pos, i2);
 
       const cb = new THREE.Vector3().subVectors(c, b);
       const ab = new THREE.Vector3().subVectors(a, b);
