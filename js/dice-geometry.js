@@ -27,7 +27,7 @@ export function getDieColor(type) {
 
 // --- Texture generation ---
 
-function createCanvasTexture(text, bgColor, textColor, size = 128) {
+function createCanvasTexture(text, bgColor, textColor, size = 128, fontScale = 0.45) {
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -37,7 +37,7 @@ function createCanvasTexture(text, bgColor, textColor, size = 128) {
   ctx.fillRect(0, 0, size, size);
 
   ctx.fillStyle = textColor;
-  ctx.font = `bold ${size * 0.45}px Arial, sans-serif`;
+  ctx.font = `bold ${size * fontScale}px Arial, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, size / 2, size / 2);
@@ -47,12 +47,15 @@ function createCanvasTexture(text, bgColor, textColor, size = 128) {
   return tex;
 }
 
+const FONT_SCALE = { d20: 0.3 };
+
 function createDieMaterials(type, faceCount) {
   const { base, text } = DIE_COLORS[type];
+  const fontScale = FONT_SCALE[type] || 0.45;
   const materials = [];
   for (let i = 0; i < faceCount; i++) {
     const num = i + 1;
-    const tex = createCanvasTexture(String(num), base, text);
+    const tex = createCanvasTexture(String(num), base, text, 128, fontScale);
     materials.push(new THREE.MeshStandardMaterial({
       map: tex,
       roughness: 0.5,
