@@ -411,12 +411,13 @@
       top: 0;
       left: 0;
       right: 0;
-      bottom: 64px; /* leave room for bottom bar */
+      bottom: 0;
       z-index: 90;
       display: none;
       align-items: center;
       justify-content: center;
       pointer-events: none;
+      overflow: hidden;
     }
 
     #roll-overlay.active {
@@ -428,9 +429,11 @@
       flex-wrap: wrap;
       gap: 12px;
       justify-content: center;
-      align-items: center;
-      padding: 20px;
-      max-width: 90vw;
+      align-content: center;
+      padding: 16px;
+      padding-bottom: 80px; /* clear bottom bar */
+      max-width: 100%;
+      max-height: 100%;
     }
 
     .roll-card {

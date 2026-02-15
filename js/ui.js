@@ -139,12 +139,13 @@ export class UI {
       value: Math.floor(Math.random() * (maxValues[d.type] || 6)) + 1
     }));
 
-    // Compute card size to fill the available space
+    // Compute card size to fill the available space (measure overlay after it's visible)
     const count = dice.length;
     const bottomBar = document.getElementById('bottom-bar');
-    const barH = bottomBar ? bottomBar.offsetHeight : 60;
-    const vw = window.innerWidth * 0.9;
-    const vh = (window.innerHeight - barH - 20) * 0.95; // subtract bottom bar + small top margin
+    const barH = bottomBar ? bottomBar.offsetHeight : 64;
+    const pad = 16; // matches .roll-cards padding
+    const vw = this.rollOverlay.clientWidth - pad * 2;
+    const vh = this.rollOverlay.clientHeight - barH - pad * 2;
     const gap = 12;
     const aspect = 0.82; // width / height
 
