@@ -54,17 +54,14 @@ export class UI {
   }
 
   _bindModeToggle() {
-    // Make the whole row tappable
     const row = this.modeToggle.closest('.mode-toggle');
-    const toggle = () => {
+    const toggle = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
       this.state.setSimpleMode(!this.state.simpleMode);
       this._applyMode();
     };
-    row.addEventListener('click', toggle);
-    row.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      toggle();
-    });
+    row.addEventListener('pointerup', toggle);
   }
 
   _applyMode() {
