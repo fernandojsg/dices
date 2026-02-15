@@ -10,12 +10,12 @@ export class UI {
     this.menuOverlay = document.getElementById('menu-overlay');
     this.presetsPanel = document.getElementById('presets-panel');
     this.diceList = document.getElementById('dice-list');
-    this.rollBtn = document.getElementById('roll-btn');
     this.resultsPanel = document.getElementById('results');
+    this.viewport = document.getElementById('viewport');
 
     this._bindMenuToggle();
     this._bindAddButtons();
-    this._bindRollButton();
+    this._bindCanvasRoll();
     this.render();
   }
 
@@ -45,27 +45,18 @@ export class UI {
     }
   }
 
-  _bindRollButton() {
-    this.rollBtn.addEventListener('click', () => {
+  _bindCanvasRoll() {
+    this.viewport.addEventListener('click', (e) => {
+      // Ignore clicks on UI elements overlaying the viewport
+      if (e.target !== this.viewport.querySelector('canvas')) return;
       if (this.diceManager.rolling) return;
       if (this.state.dice.length === 0) return;
 
-      const selectedIds = this.state.getSelectedDice().map((_, i) => {
-        // Map state dice to manager dice by index
-        return this.diceManager.dice[this.state.dice.indexOf(this.state.getSelectedDice()[i])]?.id;
-      }).filter(id => id !== undefined);
-
-      // Actually throw all dice (simpler and more fun)
       this.diceManager.throwDice();
-      this.rollBtn.disabled = true;
-      this.rollBtn.textContent = 'Rolling...';
-
       this.resultsPanel.innerHTML = '<div class="empty-state">Rolling...</div>';
     });
 
     this.diceManager.onSettled = (results) => {
-      this.rollBtn.disabled = false;
-      this.rollBtn.textContent = 'Roll Dice';
       this.renderResults(results);
     };
   }
@@ -217,7 +208,7 @@ export class UI {
   }
 
   updateRollButton() {
-    this.rollBtn.disabled = this.state.dice.length === 0 || this.diceManager.rolling;
+    // No roll button — rolling is done by clicking the canvas
   }
 
   renderResults(results) {

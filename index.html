@@ -9,7 +9,7 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f0f1a;
+      background: #252535;
       color: #e0e0e0;
       height: 100vh;
       overflow: hidden;
@@ -37,7 +37,7 @@
       height: 44px;
       border: none;
       border-radius: 8px;
-      background: rgba(26, 26, 46, 0.85);
+      background: rgba(35, 35, 55, 0.85);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       color: #e0e0e0;
@@ -49,14 +49,14 @@
       transition: background 0.15s;
     }
 
-    #menu-btn:hover { background: rgba(37, 37, 71, 0.9); }
+    #menu-btn:hover { background: rgba(50, 50, 75, 0.9); }
 
     /* Overlay backdrop */
     #menu-overlay {
       position: fixed;
       inset: 0;
       z-index: 140;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.4);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s;
@@ -75,8 +75,8 @@
       bottom: 0;
       width: 320px;
       z-index: 150;
-      background: #1a1a2e;
-      border-right: 1px solid #2a2a4a;
+      background: #22223a;
+      border-right: 1px solid #3a3a55;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
@@ -102,7 +102,7 @@
     }
 
     .panel {
-      background: #16213e;
+      background: #1c1c32;
       margin: 4px 10px;
       padding: 12px;
       border-radius: 8px;
@@ -148,7 +148,7 @@
       padding: 6px 8px;
       border-radius: 4px;
       margin-bottom: 4px;
-      background: #1a1a2e;
+      background: #252540;
     }
 
     .dice-item label {
@@ -190,10 +190,10 @@
       left: 0;
       right: 0;
       z-index: 100;
-      background: rgba(26, 26, 46, 0.85);
+      background: rgba(35, 35, 55, 0.85);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border-top: 1px solid #2a2a4a;
+      border-top: 1px solid #3a3a55;
       padding: 10px 16px;
       display: flex;
       align-items: center;
@@ -229,26 +229,6 @@
       white-space: nowrap;
     }
 
-    #roll-btn {
-      padding: 14px 28px;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #6c5ce7, #a855f7);
-      color: #fff;
-      font-size: 1.15rem;
-      font-weight: 700;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      transition: filter 0.15s, transform 0.1s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    #roll-btn:hover { filter: brightness(1.15); }
-    #roll-btn:active { transform: scale(0.97); }
-    #roll-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
-
     .preset-list {
       display: flex;
       flex-direction: column;
@@ -264,11 +244,11 @@
       padding: 6px 8px;
       border-radius: 4px;
       cursor: pointer;
-      background: #1a1a2e;
+      background: #252540;
       transition: background 0.1s;
     }
 
-    .preset-item:hover { background: #252547; }
+    .preset-item:hover { background: #30304f; }
 
     .preset-item .preset-name {
       flex: 1;
@@ -306,9 +286,9 @@
     .save-preset-row input {
       flex: 1;
       padding: 6px 10px;
-      border: 1px solid #2a2a4a;
+      border: 1px solid #3a3a55;
       border-radius: 4px;
-      background: #0f0f1a;
+      background: #1a1a30;
       color: #e0e0e0;
       font-size: 0.85rem;
     }
@@ -359,11 +339,6 @@
         width: 280px;
       }
 
-      #roll-btn {
-        padding: 16px 24px;
-        font-size: 1.25rem;
-      }
-
       .result-value {
         width: 44px;
         height: 44px;
@@ -376,17 +351,6 @@
 
       #bottom-bar {
         padding: 8px 12px;
-        flex-wrap: wrap;
-      }
-
-      #results {
-        min-width: 100%;
-        order: 2;
-      }
-
-      #roll-btn {
-        width: 100%;
-        order: 1;
       }
     }
   </style>
@@ -395,6 +359,7 @@
   {
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
       "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
     }
   }
@@ -430,9 +395,8 @@
 
   <div id="bottom-bar">
     <div id="results">
-      <div class="empty-state">Add dice and roll!</div>
+      <div class="empty-state">Add dice and tap to roll!</div>
     </div>
-    <button id="roll-btn" disabled>Roll Dice</button>
   </div>
 
   <script type="module" src="js/main.js"></script>

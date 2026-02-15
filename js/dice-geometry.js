@@ -113,26 +113,65 @@ function createConvexPolyhedron(geometry) {
 
 function buildD4() {
   const radius = 1.0 * DIE_SCALE.d4;
-  const geometry = new THREE.TetrahedronGeometry(radius);
+  const s = radius / Math.sqrt(3);
+
+  // Tetrahedron vertices
+  const V = [
+    new THREE.Vector3( s,  s,  s),  // V0
+    new THREE.Vector3( s, -s, -s),  // V1
+    new THREE.Vector3(-s,  s, -s),  // V2
+    new THREE.Vector3(-s, -s,  s),  // V3
+  ];
+
+  // Face i is opposite vertex i, has value (i+1).
+  // CCW winding for outward normals.
+  const faces = [
+    [1, 3, 2],  // face 0, value 1
+    [0, 2, 3],  // face 1, value 2
+    [0, 3, 1],  // face 2, value 3
+    [0, 1, 2],  // face 3, value 4
+  ];
+
+  // Each face shows 3 numbers near its 3 vertices.
+  // The number near vertex k = value of the face opposite k = (k+1).
+  const faceNumbers = faces.map(([a, b, c]) => [a + 1, b + 1, c + 1]);
+
+  // UV mapping: vertex A → top of texture, B → bottom-left, C → bottom-right
+  // (UV v=0 is bottom of texture, v=1 is top; canvas y is inverted)
+  const uvA = [0.5, 0.93];
+  const uvB = [0.07, 0.07];
+  const uvC = [0.93, 0.07];
+
+  const positions = [];
+  const uvs = [];
+
+  for (const [a, b, c] of faces) {
+    positions.push(V[a].x, V[a].y, V[a].z);
+    positions.push(V[b].x, V[b].y, V[b].z);
+    positions.push(V[c].x, V[c].y, V[c].z);
+    uvs.push(...uvA, ...uvB, ...uvC);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
 
-  // For a d4, the "result" is the face pointing DOWN (bottom face), which is
-  // opposite to the standard approach. Some d4s show the number on the bottom
-  // face, others show it at the top vertex. We'll use the bottom face approach:
-  // the face with the LOWEST dot product with up is the result.
+  for (let i = 0; i < 4; i++) {
+    geometry.addGroup(i * 3, 3, i);
+  }
 
-  // Compute face normals
+  const { base, text } = DIE_COLORS.d4;
+  const materials = faceNumbers.map(nums =>
+    new THREE.MeshStandardMaterial({
+      map: createD4FaceTexture(nums, base, text),
+      roughness: 0.5,
+      metalness: 0.1,
+    })
+  );
+
   const faceNormals = computeFaceNormals(geometry);
-
   const shape = createConvexPolyhedron(geometry);
-
-  // For d4, we assign numbers to faces. With TetrahedronGeometry detail=0, 4 faces.
-  // We'll use a single material with per-face number textures via vertex UVs
-  const material = createSingleMaterial('d4');
-
-  // Paint numbers on the faces using a different approach: apply texture atlas
-  const materials = createDieMaterials('d4', 4);
-  assignFaceGroups(geometry, 4);
 
   return {
     geometry,
@@ -142,6 +181,68 @@ function buildD4() {
     scale: DIE_SCALE.d4,
     invertValue: true, // d4: bottom face = value
   };
+}
+
+function createD4FaceTexture(numbers, bgColor, textColor, size = 512) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Triangle vertices in canvas coords (UV y-flipped: canvas_y = 1 - uv_v)
+  // UV A=(0.5, 0.93) → canvas (0.50, 0.07)
+  // UV B=(0.07, 0.07) → canvas (0.07, 0.93)
+  // UV C=(0.93, 0.07) → canvas (0.93, 0.93)
+  const verts = [
+    [0.50, 0.07],  // top vertex
+    [0.07, 0.93],  // bottom-left vertex
+    [0.93, 0.93],  // bottom-right vertex
+  ];
+
+  const cx = (verts[0][0] + verts[1][0] + verts[2][0]) / 3;
+  const cy = (verts[0][1] + verts[1][1] + verts[2][1]) / 3;
+
+  const fontSize = size * 0.28;
+  ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+
+  for (let i = 0; i < 3; i++) {
+    // Opposite edge midpoint
+    const j = (i + 1) % 3;
+    const k = (i + 2) % 3;
+    const mx = (verts[j][0] + verts[k][0]) / 2;
+    const my = (verts[j][1] + verts[k][1]) / 2;
+
+    // Direction from opposite edge midpoint toward this vertex
+    const dx = verts[i][0] - mx;
+    const dy = verts[i][1] - my;
+    const len = Math.sqrt(dx * dx + dy * dy);
+
+    // Rotation so text "up" aligns with this direction
+    // rotate(θ) transforms default up (0,-1) → (sinθ, -cosθ)
+    const angle = Math.atan2(dx / len, -(dy / len));
+
+    // Position: 55% from centroid toward vertex
+    const t = 0.45;
+    const nx = cx + (verts[i][0] - cx) * t;
+    const ny = cy + (verts[i][1] - cy) * t;
+
+    ctx.save();
+    ctx.translate(nx * size, ny * size);
+    ctx.rotate(angle);
+    ctx.fillText(String(numbers[i]), 0, 0);
+    ctx.restore();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 function buildD6() {
@@ -235,25 +336,29 @@ function buildD10() {
 }
 
 function createD10Geometry(radius) {
-  // Pentagonal trapezohedron
+  // Pentagonal trapezohedron with planar kite faces.
+  // For faces to be coplanar, apex/ring height ratio must be 5+2√5.
   const t = (Math.PI * 2) / 5;
+  const H = 1.0;
+  const a = H / (5 + 2 * Math.sqrt(5));  // ≈ 0.1056
+  const R = 0.9;                          // ring radius (equatorial width)
 
-  const topApex = new THREE.Vector3(0, radius, 0);
-  const bottomApex = new THREE.Vector3(0, -radius, 0);
+  const topApex = new THREE.Vector3(0, radius * H, 0);
+  const bottomApex = new THREE.Vector3(0, -radius * H, 0);
 
   const upperRing = [];
   const lowerRing = [];
 
   for (let i = 0; i < 5; i++) {
     upperRing.push(new THREE.Vector3(
-      Math.cos(t * i) * radius * 0.85,
-      radius * 0.3,
-      Math.sin(t * i) * radius * 0.85
+      Math.cos(t * i) * radius * R,
+      radius * a,
+      Math.sin(t * i) * radius * R
     ));
     lowerRing.push(new THREE.Vector3(
-      Math.cos(t * i + t / 2) * radius * 0.85,
-      -radius * 0.3,
-      Math.sin(t * i + t / 2) * radius * 0.85
+      Math.cos(t * i + t / 2) * radius * R,
+      -radius * a,
+      Math.sin(t * i + t / 2) * radius * R
     ));
   }
 
@@ -266,21 +371,21 @@ function createD10Geometry(radius) {
     const next = (i + 1) % 5;
 
     // Upper kite: topApex - upperRing[i] - lowerRing[i] - upperRing[next]
-    pushTriangle(positions, topApex, upperRing[i], lowerRing[i]);
+    pushTriangle(positions, topApex, lowerRing[i], upperRing[i]);
     groups.push({ start: triIndex * 3, count: 3, materialIndex: i * 2 });
     triIndex++;
 
-    pushTriangle(positions, topApex, lowerRing[i], upperRing[next]);
+    pushTriangle(positions, topApex, upperRing[next], lowerRing[i]);
     groups.push({ start: triIndex * 3, count: 3, materialIndex: i * 2 });
     triIndex++;
 
-    // Lower kite: bottomApex - lowerRing[i] - upperRing[i] - lowerRing[prev]
+    // Lower kite: bottomApex - lowerRing[prev] - upperRing[i] - lowerRing[i]
     const prev = (i + 4) % 5;
-    pushTriangle(positions, bottomApex, upperRing[i], lowerRing[prev]);
+    pushTriangle(positions, bottomApex, lowerRing[prev], upperRing[i]);
     groups.push({ start: triIndex * 3, count: 3, materialIndex: i * 2 + 1 });
     triIndex++;
 
-    pushTriangle(positions, bottomApex, lowerRing[i], upperRing[i]);
+    pushTriangle(positions, bottomApex, upperRing[i], lowerRing[i]);
     groups.push({ start: triIndex * 3, count: 3, materialIndex: i * 2 + 1 });
     triIndex++;
   }
@@ -296,11 +401,61 @@ function createD10Geometry(radius) {
     geo.addGroup(startTri * 3, 6, face);
   }
 
-  // Generate UVs
+  // Generate per-face projected UVs so each kite gets one centered number
   const uvs = [];
-  for (let i = 0; i < triIndex; i++) {
-    uvs.push(0.5, 1, 0, 0, 1, 0);
+  const posAttr = geo.getAttribute('position');
+
+  for (let face = 0; face < 10; face++) {
+    const baseVert = face * 6; // 2 triangles × 3 verts = 6 verts per face
+
+    // Collect the 6 vertices of this face
+    const faceVerts = [];
+    for (let v = 0; v < 6; v++) {
+      faceVerts.push(new THREE.Vector3(
+        posAttr.getX(baseVert + v),
+        posAttr.getY(baseVert + v),
+        posAttr.getZ(baseVert + v)
+      ));
+    }
+
+    // Face center
+    const center = new THREE.Vector3();
+    for (const v of faceVerts) center.add(v);
+    center.divideScalar(6);
+
+    // Face normal from first triangle
+    const e1 = new THREE.Vector3().subVectors(faceVerts[1], faceVerts[0]);
+    const e2 = new THREE.Vector3().subVectors(faceVerts[2], faceVerts[0]);
+    const normal = new THREE.Vector3().crossVectors(e1, e2).normalize();
+
+    // Tangent frame
+    const ref = Math.abs(normal.y) < 0.9
+      ? new THREE.Vector3(0, 1, 0)
+      : new THREE.Vector3(1, 0, 0);
+    const tangent = new THREE.Vector3().crossVectors(normal, ref).normalize();
+    const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+
+    // Project onto tangent frame
+    const projected = [];
+    let maxRadius = 0;
+    for (const v of faceVerts) {
+      const rel = v.clone().sub(center);
+      const u = rel.dot(tangent);
+      const w = rel.dot(bitangent);
+      projected.push(u, w);
+      maxRadius = Math.max(maxRadius, Math.sqrt(u * u + w * w));
+    }
+
+    // Write UVs centered at (0.5, 0.5)
+    const scale = maxRadius > 0 ? 0.5 / maxRadius : 1;
+    for (let v = 0; v < 6; v++) {
+      uvs.push(
+        projected[v * 2] * scale + 0.5,
+        projected[v * 2 + 1] * scale + 0.5
+      );
+    }
   }
+
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
 
   return geo;
@@ -437,6 +592,8 @@ function assignFaceGroups(geometry, faceCount) {
     const matIndex = fi % faceCount;
     const startVert = newPositions.length / 3;
 
+    // Collect all vertices for this face
+    const faceVerts = [];
     for (const triIdx of faceGroups[fi]) {
       let i0, i1, i2;
       if (idx) {
@@ -449,12 +606,46 @@ function assignFaceGroups(geometry, faceCount) {
         i2 = triIdx * 3 + 2;
       }
 
-      newPositions.push(
-        pos.getX(i0), pos.getY(i0), pos.getZ(i0),
-        pos.getX(i1), pos.getY(i1), pos.getZ(i1),
-        pos.getX(i2), pos.getY(i2), pos.getZ(i2)
+      faceVerts.push(
+        new THREE.Vector3(pos.getX(i0), pos.getY(i0), pos.getZ(i0)),
+        new THREE.Vector3(pos.getX(i1), pos.getY(i1), pos.getZ(i1)),
+        new THREE.Vector3(pos.getX(i2), pos.getY(i2), pos.getZ(i2))
       );
-      newUvs.push(0.5, 1, 0, 0, 1, 0);
+    }
+
+    // Compute face center
+    const center = new THREE.Vector3();
+    for (const v of faceVerts) center.add(v);
+    center.divideScalar(faceVerts.length);
+
+    // Build tangent frame from face normal
+    const normal = normals[faceGroups[fi][0]];
+    const ref = Math.abs(normal.y) < 0.9
+      ? new THREE.Vector3(0, 1, 0)
+      : new THREE.Vector3(1, 0, 0);
+    const tangent = new THREE.Vector3().crossVectors(normal, ref).normalize();
+    const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+
+    // Project vertices onto tangent frame relative to center
+    const projected = [];
+    let maxRadius = 0;
+    for (const v of faceVerts) {
+      const rel = v.clone().sub(center);
+      const u = rel.dot(tangent);
+      const w = rel.dot(bitangent);
+      projected.push(u, w);
+      maxRadius = Math.max(maxRadius, Math.sqrt(u * u + w * w));
+    }
+
+    // Write positions and UVs (centered at 0.5, scaled to fit)
+    const scale = maxRadius > 0 ? 0.5 / maxRadius : 1;
+    for (let vi = 0; vi < faceVerts.length; vi++) {
+      const v = faceVerts[vi];
+      newPositions.push(v.x, v.y, v.z);
+      newUvs.push(
+        projected[vi * 2] * scale + 0.5,
+        projected[vi * 2 + 1] * scale + 0.5
+      );
     }
 
     const count = (newPositions.length / 3) - startVert;
@@ -503,8 +694,16 @@ export function getDieData(type) {
 }
 
 export function readFaceValue(type, quaternion) {
-  const data = getDieData(type);
-  const { faceNormals, faceValues, invertValue, valueOffset } = data;
+  // Read directly from cache — no geometry cloning needed
+  const data = cache[type];
+  if (!data) {
+    const builder = builders[type];
+    if (!builder) throw new Error(`Unknown die type: ${type}`);
+    cache[type] = builder();
+    return readFaceValue(type, quaternion);
+  }
+
+  const { faceValues, invertValue, valueOffset } = data;
 
   const up = new THREE.Vector3(0, 1, 0);
   const q = new THREE.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
@@ -512,15 +711,14 @@ export function readFaceValue(type, quaternion) {
   let bestDot = invertValue ? Infinity : -Infinity;
   let bestFace = 0;
 
-  // For grouped faces, we use group normals
-  const groupNormals = getGroupNormals(data);
+  // Use pre-computed group normals from cache
+  const normals = data._groupNormals || (data._groupNormals = getGroupNormals(data));
 
-  for (let i = 0; i < groupNormals.length; i++) {
-    const worldNormal = groupNormals[i].clone().applyQuaternion(q);
+  for (let i = 0; i < normals.length; i++) {
+    const worldNormal = normals[i].clone().applyQuaternion(q);
     const dot = worldNormal.dot(up);
 
     if (invertValue) {
-      // d4: bottom face = lowest dot
       if (dot < bestDot) {
         bestDot = dot;
         bestFace = i;

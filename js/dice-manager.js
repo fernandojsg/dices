@@ -27,13 +27,14 @@ export class DiceManager {
       mass: 1,
       shape: data.shape,
       material: this.diceMaterial,
-      sleepTimeLimit: 0.5,
-      sleepSpeedLimit: 0.1,
-      linearDamping: 0.3,
-      angularDamping: 0.3,
+      sleepTimeLimit: 0.2,
+      sleepSpeedLimit: 0.15,
+      linearDamping: 0.5,
+      angularDamping: 0.5,
     });
     body.position.set(0, -10, 0);
     body.allowSleep = true;
+    body.sleep();
     this.world.addBody(body);
 
     const id = this.nextId++;
@@ -76,31 +77,30 @@ export class DiceManager {
       die.body.sleepState = CANNON.Body.AWAKE;
     }
 
-    // Arrange dice in starting positions
+    // Arrange dice in starting positions — spread enough to avoid overlap
     const count = toThrow.length;
-    const spread = Math.min(count * 0.8, 3);
+    const spacing = 2.0;
 
     for (let i = 0; i < count; i++) {
       const die = toThrow[i];
       const body = die.body;
 
-      // Starting position: elevated, centered, spread along X
-      const x = (i - (count - 1) / 2) * (spread / Math.max(count, 1));
-      const y = 5 + Math.random() * 2;
+      const x = (i - (count - 1) / 2) * spacing + (Math.random() - 0.5) * 0.5;
+      const y = 4 + i * 0.5 + Math.random() * 0.5;
       const z = -1 + Math.random() * 2;
 
       body.position.set(x, y, z);
       body.velocity.set(
-        (Math.random() - 0.5) * 4,
-        -3 + Math.random() * 2,
-        (Math.random() - 0.5) * 3
+        (Math.random() - 0.5) * 3,
+        -4 + Math.random() * 2,
+        (Math.random() - 0.5) * 2
       );
 
       // Random spin
       body.angularVelocity.set(
-        (Math.random() - 0.5) * 15,
-        (Math.random() - 0.5) * 15,
-        (Math.random() - 0.5) * 15
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 10
       );
 
       // Random initial orientation

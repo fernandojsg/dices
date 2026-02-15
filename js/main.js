@@ -9,6 +9,7 @@ const container = document.getElementById('viewport');
 const { scene, camera, renderer, resize } = createScene(container);
 const bounds = computePlayBounds(camera);
 const { world, step, diceMaterial, updateBounds } = createPhysicsWorld(bounds);
+
 const diceManager = new DiceManager(scene, world, diceMaterial);
 const state = new AppState();
 

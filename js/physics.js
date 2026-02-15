@@ -14,14 +14,14 @@ export function createPhysicsWorld(bounds) {
   const diceMaterial = new CANNON.Material('dice');
 
   const diceGroundContact = new CANNON.ContactMaterial(diceMaterial, groundMaterial, {
-    friction: 0.5,
-    restitution: 0.2,
+    friction: 0.6,
+    restitution: 0.1,
   });
   world.addContactMaterial(diceGroundContact);
 
   const diceDiceContact = new CANNON.ContactMaterial(diceMaterial, diceMaterial, {
-    friction: 0.4,
-    restitution: 0.3,
+    friction: 0.1,
+    restitution: 0.15,
   });
   world.addContactMaterial(diceDiceContact);
 
@@ -34,26 +34,17 @@ export function createPhysicsWorld(bounds) {
   groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
   world.addBody(groundBody);
 
-  // Dynamic walls — positioned to match the camera's visible area
-  // Each wall is an infinite plane facing inward.
-  // Config: axis to constrain, sign (-1 = negative side, +1 = positive side)
-  const wallConfigs = [
-    { axis: 'z', sign: -1, yRot: 0 },              // back
-    { axis: 'z', sign:  1, yRot: Math.PI },         // front
-    { axis: 'x', sign: -1, yRot: Math.PI / 2 },    // left
-    { axis: 'x', sign:  1, yRot: -Math.PI / 2 },   // right
-  ];
-
-  const wallBodies = wallConfigs.map(cfg => {
+  // Dynamic walls — 4 infinite planes aligned with the camera frustum edges
+  const wallBodies = [];
+  for (let i = 0; i < 4; i++) {
     const body = new CANNON.Body({
       type: CANNON.Body.STATIC,
       shape: new CANNON.Plane(),
       material: groundMaterial,
     });
-    body.quaternion.setFromEuler(0, cfg.yRot, 0);
     world.addBody(body);
-    return { body, cfg };
-  });
+    wallBodies.push(body);
+  }
 
   // Ceiling — prevent dice from flying above the camera view
   const ceilingBody = new CANNON.Body({
@@ -65,23 +56,24 @@ export function createPhysicsWorld(bounds) {
   ceilingBody.quaternion.setFromEuler(Math.PI / 2, 0, 0);
   world.addBody(ceilingBody);
 
-  // Position walls to match given play bounds
+  // Orient and position walls to match frustum edges
   function updateBounds(b) {
-    for (const { body, cfg } of wallBodies) {
-      const half = cfg.axis === 'x' ? b.halfX : b.halfZ;
-      if (cfg.axis === 'x') {
-        body.position.set(cfg.sign * half, 0, 0);
-      } else {
-        body.position.set(0, 0, cfg.sign * half);
-      }
+    for (let i = 0; i < 4; i++) {
+      const wall = b.walls[i];
+      const body = wallBodies[i];
+      body.position.set(wall.px, 0, wall.pz);
+      // CANNON.Plane default normal is (0,0,1) in local space.
+      // Rotate around Y so local +Z aligns with desired inward normal (nx, 0, nz).
+      const angle = Math.atan2(wall.nx, wall.nz);
+      body.quaternion.setFromEuler(0, angle, 0);
     }
   }
 
   // Set initial wall positions
   updateBounds(bounds);
 
-  const fixedTimeStep = 1 / 60;
-  const maxSubSteps = 3;
+  const fixedTimeStep = 1 / 120;
+  const maxSubSteps = 8;
 
   function step(dt) {
     world.step(fixedTimeStep, dt, maxSubSteps);
