@@ -164,17 +164,11 @@ export class UI {
         values[i].textContent = results[i].value;
       });
 
-      this.renderResults(results.map((r, i) => ({
-        id: i,
-        type: r.type,
-        value: r.value
-      })));
+      // Show only total in bottom bar for simple mode
+      const total = results.reduce((sum, r) => sum + r.value, 0);
+      this.resultsPanel.innerHTML = `<span id="result-total">Total: ${total}</span>`;
 
-      // Hide overlay after a moment
-      setTimeout(() => {
-        this.rollOverlay.classList.remove('active');
-        this._simpleRolling = false;
-      }, 1500);
+      this._simpleRolling = false;
     }, 600);
   }
 
