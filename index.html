@@ -119,8 +119,6 @@
 
     .tab-content {
       display: none;
-      flex: 1;
-      overflow-y: auto;
       padding-bottom: 16px;
     }
 
@@ -270,8 +268,6 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      max-height: 200px;
-      overflow-y: auto;
     }
 
     .preset-item {
@@ -355,20 +351,17 @@
 
     /* Scrollbars */
     #menu::-webkit-scrollbar,
-    #dice-list::-webkit-scrollbar,
-    .preset-list::-webkit-scrollbar {
+    #dice-list::-webkit-scrollbar {
       width: 6px;
     }
 
     #menu::-webkit-scrollbar-track,
-    #dice-list::-webkit-scrollbar-track,
-    .preset-list::-webkit-scrollbar-track {
+    #dice-list::-webkit-scrollbar-track {
       background: transparent;
     }
 
     #menu::-webkit-scrollbar-thumb,
-    #dice-list::-webkit-scrollbar-thumb,
-    .preset-list::-webkit-scrollbar-thumb {
+    #dice-list::-webkit-scrollbar-thumb {
       background: #333;
       border-radius: 3px;
     }
