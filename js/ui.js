@@ -12,11 +12,18 @@ export class UI {
     this.diceList = document.getElementById('dice-list');
     this.resultsPanel = document.getElementById('results');
     this.viewport = document.getElementById('viewport');
+    this.rollOverlay = document.getElementById('roll-overlay');
+    this.rollCards = document.getElementById('roll-cards');
+    this.modeToggle = document.getElementById('mode-toggle');
+
+    this._simpleRolling = false;
 
     this._bindMenuToggle();
     this._bindTabs();
+    this._bindModeToggle();
     this._bindAddButtons();
     this._bindCanvasRoll();
+    this._applyMode();
     this.render();
   }
 
@@ -46,12 +53,30 @@ export class UI {
     });
   }
 
+  _bindModeToggle() {
+    this.modeToggle.addEventListener('click', () => {
+      this.state.setSimpleMode(!this.state.simpleMode);
+      this._applyMode();
+    });
+  }
+
+  _applyMode() {
+    if (this.state.simpleMode) {
+      this.modeToggle.classList.add('active');
+      this.viewport.style.display = 'none';
+    } else {
+      this.modeToggle.classList.remove('active');
+      this.viewport.style.display = '';
+      this.rollOverlay.classList.remove('active');
+    }
+  }
+
   _bindAddButtons() {
     const buttons = document.querySelectorAll('.dice-buttons button');
     for (const btn of buttons) {
       btn.addEventListener('click', () => {
         const type = btn.dataset.die;
-        const stateDie = this.state.addDie(type);
+        this.state.addDie(type);
         this.diceManager.createDie(type);
         this.render();
       });
@@ -60,23 +85,33 @@ export class UI {
 
   _bindCanvasRoll() {
     const roll = () => {
-      if (this.diceManager.rolling) return;
       if (this.state.dice.length === 0) return;
-      this.diceManager.throwDice();
-      this.resultsPanel.innerHTML = '<div class="empty-state">Rolling...</div>';
+
+      if (this.state.simpleMode) {
+        if (this._simpleRolling) return;
+        this._doSimpleRoll();
+      } else {
+        if (this.diceManager.rolling) return;
+        this.diceManager.throwDice();
+        this.resultsPanel.innerHTML = '<div class="empty-state">Rolling...</div>';
+      }
     };
 
     // On touch devices: use touchend to both roll and prevent double-tap zoom
-    this.viewport.addEventListener('touchend', (e) => {
-      if (e.target === this.viewport.querySelector('canvas')) {
-        e.preventDefault();
-        roll();
-      }
+    document.addEventListener('touchend', (e) => {
+      // Don't roll if tapping on menu, buttons, or other UI
+      if (e.target.closest('#menu') || e.target.closest('#menu-btn') ||
+          e.target.closest('#bottom-bar') || e.target.closest('#menu-overlay')) return;
+      e.preventDefault();
+      roll();
     }, { passive: false });
 
-    // On desktop: use click
-    this.viewport.addEventListener('click', (e) => {
-      if (e.target !== this.viewport.querySelector('canvas')) return;
+    // On desktop: use click on viewport or overlay
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#menu') || e.target.closest('#menu-btn') ||
+          e.target.closest('#bottom-bar') || e.target.closest('#menu-overlay')) return;
+      // In 3D mode, only fire on canvas
+      if (!this.state.simpleMode && e.target !== this.viewport.querySelector('canvas')) return;
       roll();
     });
 
@@ -85,10 +120,67 @@ export class UI {
     };
   }
 
+  _doSimpleRoll() {
+    this._simpleRolling = true;
+    this.rollOverlay.classList.add('active');
+    this.resultsPanel.innerHTML = '<div class="empty-state">Rolling...</div>';
+
+    const dice = this.state.dice;
+    const hasMultipleTypes = new Set(dice.map(d => d.type)).size > 1;
+
+    // Generate random results
+    const maxValues = { d4: 4, d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
+    const results = dice.map(d => ({
+      type: d.type,
+      value: Math.floor(Math.random() * (maxValues[d.type] || 6)) + 1
+    }));
+
+    // Create cards in rolling state
+    let cardsHtml = '';
+    for (const d of dice) {
+      const color = getDieColor(d.type);
+      const typeLabel = hasMultipleTypes ? `<span class="card-type">${d.type}</span>` : '';
+      cardsHtml += `<div class="roll-card rolling" style="background:${color}">${typeLabel}<span class="card-value">?</span></div>`;
+    }
+    this.rollCards.innerHTML = cardsHtml;
+
+    const cards = this.rollCards.querySelectorAll('.roll-card');
+    const values = this.rollCards.querySelectorAll('.card-value');
+
+    // Cycle random numbers during animation
+    const interval = setInterval(() => {
+      values.forEach((el, i) => {
+        const max = maxValues[dice[i].type] || 6;
+        el.textContent = Math.floor(Math.random() * max) + 1;
+      });
+    }, 50);
+
+    // Settle after delay
+    setTimeout(() => {
+      clearInterval(interval);
+      cards.forEach((card, i) => {
+        card.classList.remove('rolling');
+        card.classList.add('settled');
+        values[i].textContent = results[i].value;
+      });
+
+      this.renderResults(results.map((r, i) => ({
+        id: i,
+        type: r.type,
+        value: r.value
+      })));
+
+      // Hide overlay after a moment
+      setTimeout(() => {
+        this.rollOverlay.classList.remove('active');
+        this._simpleRolling = false;
+      }, 1500);
+    }, 600);
+  }
+
   render() {
     this.renderPresets();
     this.renderDiceList();
-    this.updateRollButton();
   }
 
   renderPresets() {
@@ -178,7 +270,7 @@ export class UI {
       this.diceManager.createDie(d.type);
     }
 
-    this.resultsPanel.innerHTML = '<div class="empty-state">Add dice and roll!</div>';
+    this.resultsPanel.innerHTML = '<div class="empty-state">Add dice and tap to roll!</div>';
     this.render();
 
     // Close menu after loading a preset
@@ -231,22 +323,21 @@ export class UI {
     });
   }
 
-  updateRollButton() {
-    // No roll button — rolling is done by clicking the canvas
-  }
-
   renderResults(results) {
     if (!results || results.length === 0) {
       this.resultsPanel.innerHTML = '<div class="empty-state">No results yet</div>';
       return;
     }
 
+    const hasMultipleTypes = new Set(results.map(r => r.type)).size > 1;
+
     let html = '<div>';
     let total = 0;
 
     for (const r of results) {
       const color = getDieColor(r.type);
-      html += `<span class="result-value" style="background:${color}">${r.value}</span>`;
+      const typeLabel = hasMultipleTypes ? `<span class="result-type">${r.type}</span>` : '';
+      html += `<span class="result-value" style="background:${color}">${typeLabel}${r.value}</span>`;
       total += r.value;
     }
 

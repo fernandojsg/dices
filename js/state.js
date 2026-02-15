@@ -1,11 +1,18 @@
 const PRESETS_KEY = 'dice-app-presets';
 const LAST_CONFIG_KEY = 'dice-app-last-config';
+const MODE_KEY = 'dice-app-mode';
 
 export class AppState {
   constructor() {
     this.dice = []; // { type, selected, id }
     this.customPresets = this._loadPresets();
+    this.simpleMode = localStorage.getItem(MODE_KEY) === 'simple';
     this._restoreLastConfig();
+  }
+
+  setSimpleMode(on) {
+    this.simpleMode = on;
+    localStorage.setItem(MODE_KEY, on ? 'simple' : '3d');
   }
 
   addDie(type) {
