@@ -25,7 +25,6 @@ export class DiceManager {
 
     const body = new CANNON.Body({
       mass: 1,
-      shape: data.shape,
       material: this.diceMaterial,
       sleepTimeLimit: 0.1,
       sleepSpeedLimit: 0.2,
@@ -35,11 +34,15 @@ export class DiceManager {
     body.position.set(0, -10, 0);
     body.allowSleep = true;
     body.sleep();
+    // Store base shape, add scaled version later
+    body._baseShape = data.shape;
     this.world.addBody(body);
 
     const id = this.nextId++;
     const die = { mesh, body, type, id, value: null };
     this.dice.push(die);
+
+    this._applyScale();
     return die;
   }
 
@@ -51,6 +54,8 @@ export class DiceManager {
     this.scene.remove(die.mesh);
     this.world.removeBody(die.body);
     this.dice.splice(idx, 1);
+
+    this._applyScale();
   }
 
   clearAll() {
@@ -59,6 +64,44 @@ export class DiceManager {
       this.world.removeBody(die.body);
     }
     this.dice.length = 0;
+  }
+
+  _getScale() {
+    const count = this.dice.length;
+    if (count <= 2) return 1.2;
+    if (count <= 4) return 1.0;
+    if (count <= 6) return 0.8;
+    if (count <= 10) return 0.65;
+    return 0.5;
+  }
+
+  _scaleShape(baseShape, s) {
+    if (baseShape instanceof CANNON.Box) {
+      return new CANNON.Box(new CANNON.Vec3(
+        baseShape.halfExtents.x * s,
+        baseShape.halfExtents.y * s,
+        baseShape.halfExtents.z * s
+      ));
+    }
+    // ConvexPolyhedron — scale vertices
+    const scaledVerts = baseShape.vertices.map(v =>
+      new CANNON.Vec3(v.x * s, v.y * s, v.z * s)
+    );
+    const faces = baseShape.faces.map(f => [...f]);
+    return new CANNON.ConvexPolyhedron({ vertices: scaledVerts, faces });
+  }
+
+  _applyScale() {
+    const s = this._getScale();
+    for (const die of this.dice) {
+      die.mesh.scale.setScalar(s);
+      // Replace physics shape with scaled version
+      while (die.body.shapes.length) die.body.removeShape(die.body.shapes[0]);
+      die.body.addShape(this._scaleShape(die.body._baseShape, s));
+      die.body.mass = s * s * s;
+      die.body.updateMassProperties();
+    }
+    this._currentScale = s;
   }
 
   throwDice(selectedIds) {
@@ -70,6 +113,8 @@ export class DiceManager {
 
     this.rolling = true;
 
+    const s = this._currentScale || 1;
+
     // Wake up all bodies
     for (const die of toThrow) {
       die.value = null;
@@ -79,14 +124,14 @@ export class DiceManager {
 
     // Arrange dice in starting positions — spread enough to avoid overlap
     const count = toThrow.length;
-    const spacing = 2.0;
+    const spacing = 1.8 * s;
 
     for (let i = 0; i < count; i++) {
       const die = toThrow[i];
       const body = die.body;
 
-      const x = (i - (count - 1) / 2) * spacing + (Math.random() - 0.5) * 0.5;
-      const y = 2.5 + i * 0.4 + Math.random() * 0.3;
+      const x = (i - (count - 1) / 2) * spacing + (Math.random() - 0.5) * 0.3;
+      const y = 2.5 + i * 0.3 + Math.random() * 0.3;
       const z = -1 + Math.random() * 2;
 
       body.position.set(x, y, z);
