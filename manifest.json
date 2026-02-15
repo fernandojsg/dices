@@ -1,0 +1,26 @@
+{
+  "name": "Dice Roller",
+  "short_name": "Dice",
+  "description": "3D dice roller with physics simulation",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#252535",
+  "theme_color": "#252535",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

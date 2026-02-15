@@ -4,7 +4,7 @@ const MODE_KEY = 'dice-app-mode';
 
 export class AppState {
   constructor() {
-    this.dice = []; // { type, selected, id }
+    this.dice = []; // { type, selected, id, name, color }
     this.customPresets = this._loadPresets();
     this.simpleMode = localStorage.getItem(MODE_KEY) === 'simple';
     this._restoreLastConfig();
@@ -16,7 +16,7 @@ export class AppState {
   }
 
   addDie(type) {
-    const die = { type, selected: true, id: Date.now() + Math.random() };
+    const die = { type, selected: true, id: Date.now() + Math.random(), name: null, color: null };
     this.dice.push(die);
     this._saveLastConfig();
     return die;
@@ -25,6 +25,14 @@ export class AppState {
   removeDie(id) {
     this.dice = this.dice.filter(d => d.id !== id);
     this._saveLastConfig();
+  }
+
+  updateDie(index, props) {
+    const die = this.dice[index];
+    if (die) {
+      Object.assign(die, props);
+      this._saveLastConfig();
+    }
   }
 
   toggleDie(id) {
@@ -50,12 +58,19 @@ export class AppState {
       type: d.type,
       selected: true,
       id: Date.now() + Math.random(),
+      name: d.name || null,
+      color: d.color || null,
     }));
     this._saveLastConfig();
   }
 
   getCurrentConfig() {
-    return this.dice.map(d => ({ type: d.type }));
+    return this.dice.map(d => {
+      const cfg = { type: d.type };
+      if (d.name) cfg.name = d.name;
+      if (d.color) cfg.color = d.color;
+      return cfg;
+    });
   }
 
   // --- Custom presets ---
@@ -96,7 +111,12 @@ export class AppState {
 
   _saveLastConfig() {
     localStorage.setItem(LAST_CONFIG_KEY, JSON.stringify({
-      dice: this.dice.map(d => ({ type: d.type, selected: d.selected })),
+      dice: this.dice.map(d => {
+        const cfg = { type: d.type, selected: d.selected };
+        if (d.name) cfg.name = d.name;
+        if (d.color) cfg.color = d.color;
+        return cfg;
+      }),
     }));
   }
 
@@ -108,6 +128,8 @@ export class AppState {
           type: d.type,
           selected: d.selected !== false,
           id: Date.now() + Math.random(),
+          name: d.name || null,
+          color: d.color || null,
         }));
       }
     } catch { /* ignore */ }

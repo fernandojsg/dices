@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { getDieData, readFaceValue } from './dice-geometry.js';
+import { getDieData, readFaceValue, createMaterialsForType } from './dice-geometry.js';
 
 export class DiceManager {
   constructor(scene, world, diceMaterial) {
@@ -68,12 +68,12 @@ export class DiceManager {
 
   _getScale() {
     const count = this.dice.length;
-    if (count <= 1) return 2;
-    if (count <= 2) return 1.5;
-    if (count <= 4) return 1.4;
-    if (count <= 6) return 1.4;
-    if (count <= 10) return 1;
-    return 0.65;
+    if (count <= 1) return 1.5;
+    if (count <= 2) return 1.2;
+    if (count <= 4) return 1.1;
+    if (count <= 6) return 1;
+    if (count <= 10) return 0.8;
+    return 0.55;
   }
 
   _scaleShape(baseShape, s) {
@@ -132,7 +132,7 @@ export class DiceManager {
       const body = die.body;
 
       const x = (i - (count - 1) / 2) * spacing + (Math.random() - 0.5) * 0.3;
-      const y = 2.5 + i * 0.3 + Math.random() * 0.3;
+      const y = 6 + s + i * 0.3 + Math.random() * 0.3;
       const z = -1 + Math.random() * 2;
 
       body.position.set(x, y, z);
@@ -194,6 +194,30 @@ export class DiceManager {
     return this.dice
       .filter(d => d.value !== null)
       .map(d => ({ id: d.id, type: d.type, value: d.value }));
+  }
+
+  updateDieColor(index, type, color) {
+    const die = this.dice[index];
+    if (!die) return;
+
+    // Dispose old custom materials
+    if (die._customMaterials) {
+      for (const mat of die._customMaterials) {
+        if (mat.map) mat.map.dispose();
+        mat.dispose();
+      }
+    }
+
+    if (color) {
+      const materials = createMaterialsForType(type, color);
+      die.mesh.material = materials;
+      die._customMaterials = materials;
+    } else {
+      // Revert to default cached materials
+      const data = getDieData(type);
+      die.mesh.material = data.materials;
+      die._customMaterials = null;
+    }
   }
 
   getDice() {

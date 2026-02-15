@@ -1,6 +1,21 @@
 import { BUILT_IN_PRESETS, describePreset } from './presets.js';
 import { getDieColor } from './dice-geometry.js';
 
+const COLOR_PALETTE = [
+  { name: 'Red',     hex: '#c0392b' },
+  { name: 'Blue',    hex: '#2980b9' },
+  { name: 'Green',   hex: '#27ae60' },
+  { name: 'Purple',  hex: '#8e44ad' },
+  { name: 'Orange',  hex: '#d35400' },
+  { name: 'Gold',    hex: '#c49b1a' },
+  { name: 'Pink',    hex: '#e84393' },
+  { name: 'Teal',    hex: '#00b894' },
+  { name: 'Slate',   hex: '#636e72' },
+  { name: 'Crimson', hex: '#e74c3c' },
+  { name: 'Indigo',  hex: '#4834d4' },
+  { name: 'Lime',    hex: '#6ab04c' },
+];
+
 export class UI {
   constructor(state, diceManager) {
     this.state = state;
@@ -15,6 +30,8 @@ export class UI {
     this.rollOverlay = document.getElementById('roll-overlay');
     this.rollCards = document.getElementById('roll-cards');
     this.modeToggle = document.getElementById('mode-toggle');
+    this.customizeOverlay = document.getElementById('customize-overlay');
+    this.customizeDialog = document.getElementById('customize-dialog');
 
     this._simpleRolling = false;
 
@@ -91,6 +108,8 @@ export class UI {
     const roll = () => {
       if (this.state.dice.length === 0) return;
 
+      navigator.vibrate?.([80, 40, 80]);
+
       if (this.state.simpleMode) {
         if (this._simpleRolling) return;
         this._doSimpleRoll();
@@ -105,7 +124,8 @@ export class UI {
     document.addEventListener('touchend', (e) => {
       // Don't roll if tapping on menu, buttons, or other UI
       if (e.target.closest('#menu') || e.target.closest('#menu-btn') ||
-          e.target.closest('#bottom-bar') || e.target.closest('#menu-overlay')) return;
+          e.target.closest('#bottom-bar') || e.target.closest('#menu-overlay') ||
+          e.target.closest('#customize-dialog') || e.target.closest('#customize-overlay')) return;
       e.preventDefault();
       roll();
     }, { passive: false });
@@ -113,13 +133,15 @@ export class UI {
     // On desktop: use click on viewport or overlay
     document.addEventListener('click', (e) => {
       if (e.target.closest('#menu') || e.target.closest('#menu-btn') ||
-          e.target.closest('#bottom-bar') || e.target.closest('#menu-overlay')) return;
+          e.target.closest('#bottom-bar') || e.target.closest('#menu-overlay') ||
+          e.target.closest('#customize-dialog') || e.target.closest('#customize-overlay')) return;
       // In 3D mode, only fire on canvas
       if (!this.state.simpleMode && e.target !== this.viewport.querySelector('canvas')) return;
       roll();
     });
 
     this.diceManager.onSettled = (results) => {
+      navigator.vibrate?.(120);
       this.renderResults(results);
     };
   }
@@ -129,8 +151,13 @@ export class UI {
     this.rollOverlay.classList.add('active');
     this.resultsPanel.innerHTML = '<div class="empty-state">Rolling...</div>';
 
-    const dice = this.state.dice;
+    const dice = this.state.getSelectedDice();
+    if (dice.length === 0) {
+      this._simpleRolling = false;
+      return;
+    }
     const hasMultipleTypes = new Set(dice.map(d => d.type)).size > 1;
+    const hasCustomNames = dice.some(d => d.name);
 
     // Generate random results
     const maxValues = { d4: 4, d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
@@ -165,8 +192,10 @@ export class UI {
     // Create cards in rolling state
     let cardsHtml = '';
     for (const d of dice) {
-      const color = getDieColor(d.type);
-      const typeLabel = hasMultipleTypes ? `<span class="card-type" style="font-size:${typeSize}px">${d.type}</span>` : '';
+      const color = this._getDieColor(d);
+      const showLabel = hasMultipleTypes || hasCustomNames;
+      const labelText = d.name || d.type;
+      const typeLabel = showLabel ? `<span class="card-type" style="font-size:${typeSize}px">${labelText}</span>` : '';
       cardsHtml += `<div class="roll-card rolling" style="background:${color};width:${cardW}px;font-size:${fontSize}px">${typeLabel}<span class="card-value">?</span></div>`;
     }
     this.rollCards.innerHTML = cardsHtml;
@@ -185,6 +214,7 @@ export class UI {
     // Settle after delay
     setTimeout(() => {
       clearInterval(interval);
+      navigator.vibrate?.(120);
       cards.forEach((card, i) => {
         card.classList.remove('rolling');
         card.classList.add('settled');
@@ -298,6 +328,10 @@ export class UI {
     this._closeMenu();
   }
 
+  _getDieColor(die) {
+    return die.color || getDieColor(die.type);
+  }
+
   renderDiceList() {
     if (this.state.dice.length === 0) {
       this.diceList.innerHTML = '<div class="empty-state">No dice added yet</div>';
@@ -306,26 +340,36 @@ export class UI {
 
     let html = '';
     this.state.dice.forEach((die, i) => {
-      const color = getDieColor(die.type);
-      const checked = die.selected ? 'checked' : '';
+      const color = this._getDieColor(die);
+      const toggleClass = die.selected ? 'active' : '';
+      const inactiveClass = die.selected ? '' : ' inactive';
+      const label = die.name || die.type;
       html += `
-        <div class="dice-item">
-          <label>
-            <input type="checkbox" ${checked} data-toggle-die="${i}" />
-            <span class="die-badge" style="background:${color}">${die.type}</span>
-          </label>
-          <button data-remove-die="${i}">&times;</button>
+        <div class="dice-item${inactiveClass}">
+          <button class="die-toggle ${toggleClass}" data-toggle-die="${i}"></button>
+          <span class="die-badge" style="background:${color}" data-customize-die="${i}">${label}</span>
+          <button class="die-remove" data-remove-die="${i}">&times;</button>
         </div>`;
     });
 
     this.diceList.innerHTML = html;
 
     // Bind toggle
-    this.diceList.querySelectorAll('[data-toggle-die]').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const idx = parseInt(cb.dataset.toggleDie);
-        this.state.dice[idx].selected = cb.checked;
+    this.diceList.querySelectorAll('[data-toggle-die]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.toggleDie);
+        const die = this.state.dice[idx];
+        die.selected = !die.selected;
         this.state._saveLastConfig();
+        this.renderDiceList();
+      });
+    });
+
+    // Bind badge click → customize dialog
+    this.diceList.querySelectorAll('[data-customize-die]').forEach(badge => {
+      badge.addEventListener('click', () => {
+        const idx = parseInt(badge.dataset.customizeDie);
+        this._openCustomizeDialog(idx);
       });
     });
 
@@ -344,6 +388,70 @@ export class UI {
     });
   }
 
+  _openCustomizeDialog(idx) {
+    const die = this.state.dice[idx];
+    if (!die) return;
+
+    const overlay = this.customizeOverlay;
+    const nameInput = document.getElementById('customize-name');
+    const colorsContainer = document.getElementById('customize-colors');
+
+    nameInput.value = die.name || '';
+
+    // Build color swatches
+    let selectedColor = die.color || null;
+    let swatchesHtml = `<div class="color-swatch default-swatch${!selectedColor ? ' selected' : ''}" data-color="">&#8635;</div>`;
+    for (const c of COLOR_PALETTE) {
+      const sel = selectedColor === c.hex ? ' selected' : '';
+      swatchesHtml += `<div class="color-swatch${sel}" style="background:${c.hex}" data-color="${c.hex}" title="${c.name}"></div>`;
+    }
+    colorsContainer.innerHTML = swatchesHtml;
+
+    // Bind swatch clicks
+    colorsContainer.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        colorsContainer.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        swatch.classList.add('selected');
+        selectedColor = swatch.dataset.color || null;
+      });
+    });
+
+    // Show dialog
+    overlay.classList.add('active');
+    nameInput.focus();
+    nameInput.select();
+
+    // Bind save
+    const saveBtn = document.getElementById('customize-save');
+    const cancelBtn = document.getElementById('customize-cancel');
+
+    const close = () => {
+      overlay.classList.remove('active');
+      saveBtn.replaceWith(saveBtn.cloneNode(true));
+      cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+    };
+
+    saveBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim() || null;
+      const color = selectedColor;
+      this.state.updateDie(idx, { name, color });
+      this.diceManager.updateDieColor(idx, die.type, color);
+      this.renderDiceList();
+      close();
+    });
+
+    cancelBtn.addEventListener('click', close);
+
+    // Close on overlay click (outside dialog)
+    const onOverlayClick = (e) => {
+      if (e.target === overlay) {
+        close();
+        overlay.removeEventListener('click', onOverlayClick);
+      }
+    };
+    overlay.addEventListener('click', onOverlayClick);
+  }
+
   renderResults(results) {
     if (!results || results.length === 0) {
       this.resultsPanel.innerHTML = '<div class="empty-state">No results yet</div>';
@@ -351,13 +459,18 @@ export class UI {
     }
 
     const hasMultipleTypes = new Set(results.map(r => r.type)).size > 1;
+    const hasCustomNames = this.state.dice.some(d => d.name);
 
     let html = '<div>';
     let total = 0;
 
-    for (const r of results) {
-      const color = getDieColor(r.type);
-      const typeLabel = hasMultipleTypes ? `<span class="result-type">${r.type}</span>` : '';
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      const stateDie = this.state.dice[i];
+      const color = stateDie ? this._getDieColor(stateDie) : getDieColor(r.type);
+      const showLabel = hasMultipleTypes || hasCustomNames;
+      const labelText = stateDie?.name || r.type;
+      const typeLabel = showLabel ? `<span class="result-type">${labelText}</span>` : '';
       html += `<span class="result-value" style="background:${color}">${typeLabel}${r.value}</span>`;
       total += r.value;
     }

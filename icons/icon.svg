@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#252535"/>
+  <g transform="translate(256,256)">
+    <!-- d20 shape (icosahedron face) -->
+    <polygon points="0,-140 121,70 -121,70" fill="none" stroke="#8888cc" stroke-width="12" stroke-linejoin="round"/>
+    <!-- dots like a d6 -->
+    <circle cx="-40" cy="-40" r="14" fill="#c0392b"/>
+    <circle cx="40" cy="-40" r="14" fill="#2980b9"/>
+    <circle cx="0" cy="10" r="14" fill="#27ae60"/>
+    <circle cx="-40" cy="55" r="14" fill="#8e44ad"/>
+    <circle cx="40" cy="55" r="14" fill="#c49b1a"/>
+  </g>
+</svg>

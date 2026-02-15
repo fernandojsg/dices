@@ -669,6 +669,73 @@ function assignFaceGroups(geometry, faceCount) {
   geometry.computeVertexNormals();
 }
 
+// --- Custom color materials ---
+
+export function createMaterialsForType(type, baseColor) {
+  const textColor = '#fff';
+
+  if (type === 'd4') {
+    // D4 needs triangular face textures
+    const radius = 1.0 * DIE_SCALE.d4;
+    const s = radius / Math.sqrt(3);
+    const V = [
+      new THREE.Vector3( s,  s,  s),
+      new THREE.Vector3( s, -s, -s),
+      new THREE.Vector3(-s,  s, -s),
+      new THREE.Vector3(-s, -s,  s),
+    ];
+    const faces = [[1,3,2],[0,2,3],[0,3,1],[0,1,2]];
+    const faceNumbers = faces.map(([a, b, c]) => [a + 1, b + 1, c + 1]);
+    return faceNumbers.map(nums =>
+      new THREE.MeshStandardMaterial({
+        map: createD4FaceTexture(nums, baseColor, textColor),
+        roughness: 0.5,
+        metalness: 0.1,
+      })
+    );
+  }
+
+  if (type === 'd6') {
+    const faceValues = [1, 6, 2, 5, 3, 4];
+    return faceValues.map(v =>
+      new THREE.MeshStandardMaterial({
+        map: createCanvasTexture(String(v), baseColor, textColor),
+        roughness: 0.5,
+        metalness: 0.1,
+      })
+    );
+  }
+
+  if (type === 'd10') {
+    const materials = [];
+    const fontScale = FONT_SCALE.d10;
+    for (let i = 0; i < 10; i++) {
+      materials.push(new THREE.MeshStandardMaterial({
+        map: createCanvasTexture(String(i), baseColor, textColor, 128, fontScale),
+        roughness: 0.5,
+        metalness: 0.1,
+      }));
+    }
+    return materials;
+  }
+
+  // d8, d12, d20 — numbered 1..N
+  const faceCounts = { d8: 8, d12: 12, d20: 20 };
+  const faceCount = faceCounts[type];
+  if (!faceCount) throw new Error(`Unknown die type: ${type}`);
+
+  const fontScale = FONT_SCALE[type] || 0.45;
+  const materials = [];
+  for (let i = 0; i < faceCount; i++) {
+    materials.push(new THREE.MeshStandardMaterial({
+      map: createCanvasTexture(String(i + 1), baseColor, textColor, 128, fontScale),
+      roughness: 0.5,
+      metalness: 0.1,
+    }));
+  }
+  return materials;
+}
+
 // --- Public API ---
 
 const builders = {

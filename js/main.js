@@ -18,6 +18,13 @@ for (const die of state.dice) {
   diceManager.createDie(die.type);
 }
 
+// Apply saved custom colors
+state.dice.forEach((die, i) => {
+  if (die.color) {
+    diceManager.updateDieColor(i, die.type, die.color);
+  }
+});
+
 const ui = new UI(state, diceManager);
 
 // Handle resize — update camera/renderer, then reposition walls
