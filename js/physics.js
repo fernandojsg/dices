@@ -15,13 +15,13 @@ export function createPhysicsWorld(bounds) {
 
   const diceGroundContact = new CANNON.ContactMaterial(diceMaterial, groundMaterial, {
     friction: 0.6,
-    restitution: 0.1,
+    restitution: 0.05,
   });
   world.addContactMaterial(diceGroundContact);
 
   const diceDiceContact = new CANNON.ContactMaterial(diceMaterial, diceMaterial, {
     friction: 0.1,
-    restitution: 0.15,
+    restitution: 0.08,
   });
   world.addContactMaterial(diceDiceContact);
 

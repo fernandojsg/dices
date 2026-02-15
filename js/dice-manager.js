@@ -27,10 +27,10 @@ export class DiceManager {
       mass: 1,
       shape: data.shape,
       material: this.diceMaterial,
-      sleepTimeLimit: 0.2,
-      sleepSpeedLimit: 0.15,
-      linearDamping: 0.5,
-      angularDamping: 0.5,
+      sleepTimeLimit: 0.1,
+      sleepSpeedLimit: 0.2,
+      linearDamping: 0.6,
+      angularDamping: 0.6,
     });
     body.position.set(0, -10, 0);
     body.allowSleep = true;
@@ -86,21 +86,21 @@ export class DiceManager {
       const body = die.body;
 
       const x = (i - (count - 1) / 2) * spacing + (Math.random() - 0.5) * 0.5;
-      const y = 4 + i * 0.5 + Math.random() * 0.5;
+      const y = 2.5 + i * 0.4 + Math.random() * 0.3;
       const z = -1 + Math.random() * 2;
 
       body.position.set(x, y, z);
       body.velocity.set(
-        (Math.random() - 0.5) * 3,
-        -4 + Math.random() * 2,
-        (Math.random() - 0.5) * 2
+        (Math.random() - 0.5) * 2,
+        -3 + Math.random(),
+        (Math.random() - 0.5) * 1.5
       );
 
       // Random spin
       body.angularVelocity.set(
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10
+        (Math.random() - 0.5) * 8,
+        (Math.random() - 0.5) * 8,
+        (Math.random() - 0.5) * 8
       );
 
       // Random initial orientation
@@ -134,7 +134,7 @@ export class DiceManager {
     };
 
     // Start checking after a short delay
-    setTimeout(() => requestAnimationFrame(check), 300);
+    setTimeout(() => requestAnimationFrame(check), 150);
   }
 
   syncMeshes() {
