@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dice-roller-v4';
+const CACHE_NAME = 'dice-roller-v5';
 
 const ASSETS = [
   './',
