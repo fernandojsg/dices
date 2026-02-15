@@ -47,7 +47,7 @@ function createCanvasTexture(text, bgColor, textColor, size = 128, fontScale = 0
   return tex;
 }
 
-const FONT_SCALE = { d20: 0.3 };
+const FONT_SCALE = { d10: 0.35, d20: 0.3 };
 
 function createDieMaterials(type, faceCount) {
   const { base, text } = DIE_COLORS[type];

@@ -59,6 +59,11 @@ export class UI {
   }
 
   _bindCanvasRoll() {
+    // Prevent double-tap zoom on the canvas
+    this.viewport.addEventListener('touchend', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+
     this.viewport.addEventListener('click', (e) => {
       // Ignore clicks on UI elements overlaying the viewport
       if (e.target !== this.viewport.querySelector('canvas')) return;

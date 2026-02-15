@@ -91,9 +91,9 @@ export class DiceManager {
 
       body.position.set(x, y, z);
       body.velocity.set(
-        (Math.random() - 0.5) * 2,
-        -3 + Math.random(),
-        (Math.random() - 0.5) * 1.5
+        (Math.random() - 0.5) * 0.5,
+        -5,
+        (Math.random() - 0.5) * 0.5
       );
 
       // Random spin
