@@ -1,9 +1,10 @@
-const CACHE_NAME = 'dice-roller-v3';
+const CACHE_NAME = 'dice-roller-v4';
 
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './favicon.png',
   './js/main.js',
   './js/state.js',
   './js/ui.js',
@@ -16,7 +17,6 @@ const ASSETS = [
   './vendor/cannon-es.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/icon.svg',
 ];
 
 self.addEventListener('install', (e) => {
