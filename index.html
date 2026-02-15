@@ -88,6 +88,46 @@
       transform: translateX(0);
     }
 
+    /* Tab bar */
+    .menu-tabs {
+      display: flex;
+      padding: 68px 10px 0;
+      gap: 4px;
+    }
+
+    .menu-tab {
+      flex: 1;
+      padding: 10px 0;
+      border: none;
+      border-radius: 6px 6px 0 0;
+      background: transparent;
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .menu-tab:hover { color: #aaa; }
+
+    .menu-tab.active {
+      background: #1c1c32;
+      color: #8888cc;
+    }
+
+    .tab-content {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 16px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
     #menu h2 {
       font-size: 1.1rem;
       padding: 14px 16px 8px;
@@ -97,15 +137,12 @@
       font-weight: 600;
     }
 
-    #menu h2:first-child {
-      padding-top: 20px;
-    }
-
     .panel {
       background: #1c1c32;
       margin: 4px 10px;
       padding: 12px;
       border-radius: 8px;
+      overflow: hidden;
     }
 
     .dice-buttons {
@@ -281,10 +318,12 @@
       display: flex;
       gap: 6px;
       margin-top: 8px;
+      min-width: 0;
     }
 
     .save-preset-row input {
       flex: 1;
+      min-width: 0;
       padding: 6px 10px;
       border: 1px solid #3a3a55;
       border-radius: 4px;
@@ -302,6 +341,7 @@
       font-size: 0.85rem;
       cursor: pointer;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .save-preset-row button:hover { filter: brightness(1.15); }
@@ -372,24 +412,32 @@
   <div id="menu-overlay"></div>
 
   <div id="menu">
-    <h2>Presets</h2>
-    <div class="panel" id="presets-panel"></div>
+    <div class="menu-tabs">
+      <button class="menu-tab active" data-tab="dice">Dice</button>
+      <button class="menu-tab" data-tab="presets">Presets</button>
+    </div>
 
-    <h2>Add Dice</h2>
-    <div class="panel">
-      <div class="dice-buttons">
-        <button class="btn-d4" data-die="d4">d4</button>
-        <button class="btn-d6" data-die="d6">d6</button>
-        <button class="btn-d8" data-die="d8">d8</button>
-        <button class="btn-d10" data-die="d10">d10</button>
-        <button class="btn-d12" data-die="d12">d12</button>
-        <button class="btn-d20" data-die="d20">d20</button>
+    <div class="tab-content active" id="tab-dice">
+      <h2>Add Dice</h2>
+      <div class="panel">
+        <div class="dice-buttons">
+          <button class="btn-d4" data-die="d4">d4</button>
+          <button class="btn-d6" data-die="d6">d6</button>
+          <button class="btn-d8" data-die="d8">d8</button>
+          <button class="btn-d10" data-die="d10">d10</button>
+          <button class="btn-d12" data-die="d12">d12</button>
+          <button class="btn-d20" data-die="d20">d20</button>
+        </div>
+      </div>
+
+      <h2>Dice Pool</h2>
+      <div class="panel" id="dice-list-panel">
+        <div id="dice-list"></div>
       </div>
     </div>
 
-    <h2>Dice Pool</h2>
-    <div class="panel" id="dice-list-panel">
-      <div id="dice-list"></div>
+    <div class="tab-content" id="tab-presets">
+      <div class="panel" id="presets-panel"></div>
     </div>
   </div>
 

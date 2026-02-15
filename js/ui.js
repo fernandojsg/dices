@@ -14,6 +14,7 @@ export class UI {
     this.viewport = document.getElementById('viewport');
 
     this._bindMenuToggle();
+    this._bindTabs();
     this._bindAddButtons();
     this._bindCanvasRoll();
     this.render();
@@ -31,6 +32,18 @@ export class UI {
 
   _closeMenu() {
     document.body.classList.remove('menu-open');
+  }
+
+  _bindTabs() {
+    const tabs = document.querySelectorAll('.menu-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+      });
+    });
   }
 
   _bindAddButtons() {
