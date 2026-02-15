@@ -408,7 +408,10 @@
     /* 2D roll overlay */
     #roll-overlay {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 64px; /* leave room for bottom bar */
       z-index: 90;
       display: none;
       align-items: center;
@@ -435,18 +438,15 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: 72px;
-      height: 88px;
+      aspect-ratio: 0.82;
       border-radius: 12px;
       font-weight: 800;
-      font-size: 1.8rem;
       color: #fff;
       position: relative;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
 
     .roll-card .card-type {
-      font-size: 0.65rem;
       font-weight: 600;
       opacity: 0.7;
       text-transform: uppercase;

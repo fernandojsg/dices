@@ -139,12 +139,34 @@ export class UI {
       value: Math.floor(Math.random() * (maxValues[d.type] || 6)) + 1
     }));
 
+    // Compute card size to fill the available space
+    const count = dice.length;
+    const bottomBar = document.getElementById('bottom-bar');
+    const barH = bottomBar ? bottomBar.offsetHeight : 60;
+    const vw = window.innerWidth * 0.9;
+    const vh = (window.innerHeight - barH - 20) * 0.95; // subtract bottom bar + small top margin
+    const gap = 12;
+    const aspect = 0.82; // width / height
+
+    // Try different column counts and pick the one that gives the largest cards
+    let bestW = 0;
+    for (let cols = 1; cols <= count; cols++) {
+      const rows = Math.ceil(count / cols);
+      const maxW = (vw - gap * (cols - 1)) / cols;
+      const maxH = (vh - gap * (rows - 1)) / rows;
+      const w = Math.min(maxW, maxH * aspect);
+      if (w > bestW) bestW = w;
+    }
+    const cardW = Math.min(Math.max(bestW, 40), 200);
+    const fontSize = cardW * 0.4;
+    const typeSize = cardW * 0.12;
+
     // Create cards in rolling state
     let cardsHtml = '';
     for (const d of dice) {
       const color = getDieColor(d.type);
-      const typeLabel = hasMultipleTypes ? `<span class="card-type">${d.type}</span>` : '';
-      cardsHtml += `<div class="roll-card rolling" style="background:${color}">${typeLabel}<span class="card-value">?</span></div>`;
+      const typeLabel = hasMultipleTypes ? `<span class="card-type" style="font-size:${typeSize}px">${d.type}</span>` : '';
+      cardsHtml += `<div class="roll-card rolling" style="background:${color};width:${cardW}px;font-size:${fontSize}px">${typeLabel}<span class="card-value">?</span></div>`;
     }
     this.rollCards.innerHTML = cardsHtml;
 

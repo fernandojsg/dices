@@ -68,10 +68,11 @@ export class DiceManager {
 
   _getScale() {
     const count = this.dice.length;
-    if (count <= 2) return 1.4;
-    if (count <= 4) return 1.2;
-    if (count <= 6) return 1.0;
-    if (count <= 10) return 0.8;
+    if (count <= 1) return 2;
+    if (count <= 2) return 1.5;
+    if (count <= 4) return 1.4;
+    if (count <= 6) return 1.4;
+    if (count <= 10) return 1;
     return 0.65;
   }
 
