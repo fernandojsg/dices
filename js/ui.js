@@ -59,19 +59,25 @@ export class UI {
   }
 
   _bindCanvasRoll() {
-    // Prevent double-tap zoom on the canvas
-    this.viewport.addEventListener('touchend', (e) => {
-      e.preventDefault();
-    }, { passive: false });
-
-    this.viewport.addEventListener('click', (e) => {
-      // Ignore clicks on UI elements overlaying the viewport
-      if (e.target !== this.viewport.querySelector('canvas')) return;
+    const roll = () => {
       if (this.diceManager.rolling) return;
       if (this.state.dice.length === 0) return;
-
       this.diceManager.throwDice();
       this.resultsPanel.innerHTML = '<div class="empty-state">Rolling...</div>';
+    };
+
+    // On touch devices: use touchend to both roll and prevent double-tap zoom
+    this.viewport.addEventListener('touchend', (e) => {
+      if (e.target === this.viewport.querySelector('canvas')) {
+        e.preventDefault();
+        roll();
+      }
+    }, { passive: false });
+
+    // On desktop: use click
+    this.viewport.addEventListener('click', (e) => {
+      if (e.target !== this.viewport.querySelector('canvas')) return;
+      roll();
     });
 
     this.diceManager.onSettled = (results) => {
